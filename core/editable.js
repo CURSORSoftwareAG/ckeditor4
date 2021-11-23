@@ -1681,32 +1681,34 @@
 		var startBlockChildCount = getParentBlockChildCount( range.startPath() ),
 			endBlockChildCount = getParentBlockChildCount( range.endPath() );
 
-		if ( isIncludeNestedList || ( startBlockChildCount !== endBlockChildCount ) ) {
-			var isListParent = null,
-				listParent = null,
-				parent = firstRangeEl.getParent();
+		if ( !isIncludeNestedList && ( startBlockChildCount === endBlockChildCount ) ) {
+			return false;
+		}
 
-			// Get the parent of the list.
-			while ( !isListParent ) {
-				var parentName = parent.getName();
+		var listParent = getParentOfTheList( firstRangeEl );
 
-				// We need to search for first closest parent list.
-				isListParent = CKEDITOR.tools.array.some( listsTypes, function( listType ) {
-					if ( parentName === listType ) {
-						listParent = parent;
-						return parentName === listType;
-					}
+		range.setStart( listParent, 0 );
+		range.enlarge( CKEDITOR.ENLARGE_ELEMENT );
+
+		return range;
+
+		function getParentOfTheList( startElement ) {
+			var isParentNameOnList,
+				parent = startElement,
+				parentName;
+
+			while ( !isParentNameOnList ) {
+				parent = parent.getParent();
+				parentName = parent.getName();
+
+				isParentNameOnList = CKEDITOR.tools.array.find( listsTypes, function( listType ) {
+					return parentName === listType;
 				} );
 
-				parent = parent.getParent();
+				if ( isParentNameOnList ) {
+					return parent;
+				}
 			}
-
-			range.setStart( listParent, 0 );
-			range.enlarge( CKEDITOR.ENLARGE_ELEMENT );
-
-			return range;
-		} else {
-			return false;
 		}
 
 		// Check if element is the first item in the list.
