@@ -1187,6 +1187,30 @@
 			// after canceling 'beforePaste' event.
 			var beforePasteNotCanceled = editor.fire( 'beforePaste', eventData ) !== false;
 
+			// BEGIN PATCH
+			if (CKEDITOR.env.chrome || CKEDITOR.env.edge) {
+				var IMAGE_MIME_REGEX = /^image\/(p?jpeg|gif|png)$/i;
+				var items = evt.data.$.clipboardData.items;
+				if (items.length === 1 && IMAGE_MIME_REGEX.test(items[0].type)) {
+					var reader = new FileReader();
+					reader.onload = function(e) {
+						var img = document.createElement("img");
+						img.src = e.target.result;
+						var imgHTML = img.outerHTML;
+						getClipboardDataByPastebin(evt, function(pastebinHTML) {
+							if (CKEDITOR.env.edge && !pastebinHTML) {
+								pastebinHTML = imgHTML;
+							}
+							eventData.dataValue = pastebinHTML.replace(/<span[^>]+data-cke-bookmark[^<]*?<\/span>/ig, "");
+							beforePasteNotCanceled && firePasteEvents(editor, eventData);
+						});
+					};
+					reader.readAsDataURL(items[0].getAsFile());
+					return;
+				}
+			}
+			// END PATCH
+
 			// Do not use paste bin if the browser let us get HTML or files from dataTranfer.
 			if ( beforePasteNotCanceled && clipboard.canClipboardApiBeTrusted( eventData.dataTransfer, editor ) ) {
 				evt.data.preventDefault();
